@@ -9,6 +9,12 @@
 
 #define SENSOR_DELAY 5 //TODO Still ok?
 
+enum direction {
+	still,
+	cw,
+	ccw
+};
+
 CRGB leds[NUM_LEDS];
 byte mode;
 
@@ -18,6 +24,8 @@ unsigned long deltaT;
 
 boolean pinA, pinB, pSwitch;
 boolean lastA, lastB, lastSwitch;
+
+direction dir;
 
 //Color picker
 byte hue;
@@ -38,6 +46,7 @@ void setup() {
 	lastSwitch = pSwitch = (HIGH == digitalRead(SWITCH_PIN));
 
 	mode = 0;
+	dir = still;
 	hue = 0;
 
 	lastTime = currentTime = millis();
@@ -62,18 +71,46 @@ void loop() {
 		}
 
 		if(pinA != lastA) {
-			//TODO Encoder stuff
+			if(pinA) {
+				if(pinB) dir = cw;
+				else dir = ccw;
+			} else {
+				if(!pinB) dir = cw;
+				else dir = ccw;
+			}
 
 			lastA = pinA;
 			lastB = pinB;
 		} else if(pinB != lastB) {
-			//TODO Encoder stuff
+			if(pinB) {
+				if(!pinA) dir = cw;
+				else dir = ccw;
+			} else {
+				if(pinA) dir = cw;
+				else dir = ccw;
+			}
 
 			lastA = pinA;
 			lastB = pinB;
 		}
 
 		lastTime = currentTime;
+	}
+
+	if(dir != still) {
+		switch(mode) {
+			case 2: //Color picker
+				if(dir == cw) hue++; //hue will wrap around after 255
+				else hue--;
+
+				break;
+			case 3: //Color fade //TODO
+				break;
+			case 4: //Rainbow chase //TODO
+				break;
+		}
+
+		dir = still;
 	}
 
 	switch(mode) {
