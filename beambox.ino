@@ -72,7 +72,7 @@ void loop() {
 
 		if(pinA != lastA) {
 			if(pinA) {
-				if(pinB) dir = cw;
+				if(pinB) dir = cw; //TODO Set all directions
 				else dir = ccw;
 			} else {
 				if(!pinB) dir = cw;
