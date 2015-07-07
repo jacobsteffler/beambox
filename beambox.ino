@@ -18,9 +18,7 @@ enum direction {
 CRGB leds[NUM_LEDS];
 byte mode;
 
-unsigned long currentTime;
 unsigned long lastTime;
-unsigned long deltaT;
 
 boolean pinA, pinB, pSwitch;
 boolean lastA, lastB, lastSwitch;
@@ -30,7 +28,22 @@ direction dir;
 //Color picker
 byte hue;
 
-//Fade //TODO
+//Fade
+byte scheme;
+byte sub;
+byte frac;
+CRGB currentFade;
+const unsigned long fadeDelay = 50;
+unsigned long lastTimeFade;
+const CRGB schemes[7][5] = { //TODO Finish colors; brighter?
+	{CRGB(204, 12, 57), CRGB(230, 120, 30), CRGB(200, 207, 2), CRGB(248, 252, 193), CRGB(22, 147, 167)},
+	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
+	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
+	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
+	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
+	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
+	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)}
+};
 
 //Chase //TODO
 
@@ -48,22 +61,24 @@ void setup() {
 	mode = 0;
 	dir = still;
 	hue = 0;
+	scheme = 0;
+	sub = 0;
+	frac = 0;
 
-	lastTime = currentTime = millis();
-	deltaT = 0;
+	lastTimeFade = lastTime = millis();
 }
 
 void loop() {
-	currentTime = millis();
 	pinA = (HIGH == digitalRead(E_PIN_A));
 	pinB = (HIGH == digitalRead(E_PIN_B));
 	pSwitch = (HIGH == digitalRead(SWITCH_PIN));
 
-	deltaT = (unsigned long)(currentTime - lastTime);
-	if(deltaT >= SENSOR_DELAY) {
+	if((unsigned long)(millis() - lastTime) >= SENSOR_DELAY) {
 		if(pSwitch != lastSwitch) {
 			if(pSwitch) {
 				mode = (mode + 1) % 5;
+
+				if(mode == 3) lastTimeFade = millis();
 			}
 
 			lastSwitch = pSwitch;
@@ -93,7 +108,7 @@ void loop() {
 			lastB = pinB;
 		}
 
-		lastTime = currentTime;
+		lastTime = millis();
 	}
 
 	if(dir != still) {
@@ -104,6 +119,18 @@ void loop() {
 
 				break;
 			case 3: //Color fade //TODO
+				if(dir == cw) scheme++;
+				else scheme--;
+
+				if(scheme > 6) scheme = 6;
+				if(scheme < 0) scheme = 0;
+
+				sub = 0;
+				frac = 0;
+
+				lastTimeFade = millis();
+				currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % 5], frac);
+
 				break;
 			case 4: //Rainbow chase //TODO
 				break;
@@ -126,7 +153,20 @@ void loop() {
 
 			break;
 		case 3: //Color fade
-			fill_solid(leds, NUM_LEDS, CRGB::Red); //TODO
+			if((unsigned long)(millis() - lastTimeFade) >= fadeDelay) {
+				if(frac == 255) {
+					frac = 0;
+					sub = (sub + 1) % 5;
+				} else {
+					frac++;
+				}
+
+				currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % 5], frac);
+
+				lastTimeFade = millis();
+			}
+
+			fill_solid(leds, NUM_LEDS, currentFade);
 
 			break;
 		case 4: //Rainbow chase
