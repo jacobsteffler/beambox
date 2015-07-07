@@ -7,6 +7,15 @@
 #define E_PIN_B 10
 #define SWITCH_PIN 11
 
+#define NUM_MODES 4
+#define NUM_SCHEMES 7
+#define PER_SCHEME 5
+
+#define OFF 0
+#define WHITE 1
+#define PICK 2
+#define FADE 3
+
 #define SENSOR_DELAY 5 //TODO Still ok?
 
 enum direction {
@@ -33,9 +42,9 @@ byte scheme;
 byte sub;
 byte frac;
 CRGB currentFade;
-const unsigned long fadeDelay = 50;
+const unsigned long fadeDelay = 100;
 unsigned long lastTimeFade;
-const CRGB schemes[7][5] = { //TODO Finish colors; brighter?
+const CRGB schemes[NUM_SCHEMES][PER_SCHEME] = { //TODO Finish colors; brighter?
 	{CRGB(204, 12, 57), CRGB(230, 120, 30), CRGB(200, 207, 2), CRGB(248, 252, 193), CRGB(22, 147, 167)},
 	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
 	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
@@ -44,8 +53,6 @@ const CRGB schemes[7][5] = { //TODO Finish colors; brighter?
 	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
 	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)}
 };
-
-//Chase //TODO
 
 void setup() {
 	FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
@@ -76,9 +83,9 @@ void loop() {
 	if((unsigned long)(millis() - lastTime) >= SENSOR_DELAY) {
 		if(pSwitch != lastSwitch) {
 			if(pSwitch) {
-				mode = (mode + 1) % 5;
+				mode = (mode + 1) % NUM_MODES;
 
-				if(mode == 3) lastTimeFade = millis();
+				if(mode == FADE) lastTimeFade = millis();
 			}
 
 			lastSwitch = pSwitch;
@@ -113,23 +120,23 @@ void loop() {
 
 	if(dir != still) {
 		switch(mode) {
-			case 2: //Color picker
+			case PICK: //Color picker
 				if(dir == cw) hue++; //hue will wrap around after 255
 				else hue--;
 
 				break;
-			case 3: //Color fade //TODO
+			case FADE: //Color fade
 				if(dir == cw) scheme++;
 				else scheme--;
 
-				if(scheme > 6) scheme = 6;
+				if(scheme > NUM_SCHEMES) scheme = NUM_SCHEMES;
 				if(scheme < 0) scheme = 0;
 
 				sub = 0;
 				frac = 0;
 
 				lastTimeFade = millis();
-				currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % 5], frac);
+				currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % PER_SCHEME], frac);
 
 				break;
 			case 4: //Rainbow chase //TODO
@@ -140,37 +147,33 @@ void loop() {
 	}
 
 	switch(mode) {
-		case 0: //Off
+		case OFF: //Off
 			fill_solid(leds, NUM_LEDS, CRGB::Black);
 
 			break;
-		case 1: //White
+		case WHITE: //White
 			fill_solid(leds, NUM_LEDS, CRGB::White);
 
 			break;
-		case 2: //Color picker
+		case PICK: //Color picker
 			fill_solid(leds, NUM_LEDS, CHSV(hue, 255, 255));
 
 			break;
-		case 3: //Color fade
+		case FADE: //Color fade
 			if((unsigned long)(millis() - lastTimeFade) >= fadeDelay) {
 				if(frac == 255) {
 					frac = 0;
-					sub = (sub + 1) % 5;
+					sub = (sub + 1) % PER_SCHEME;
 				} else {
 					frac++;
 				}
 
-				currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % 5], frac);
+				currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % PER_SCHEME], frac);
 
 				lastTimeFade = millis();
 			}
 
 			fill_solid(leds, NUM_LEDS, currentFade);
-
-			break;
-		case 4: //Rainbow chase
-			fill_rainbow(leds, NUM_LEDS, 0); //TODO
 
 			break;
 	}
