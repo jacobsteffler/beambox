@@ -63,8 +63,7 @@ void loop() {
 	if(deltaT >= SENSOR_DELAY) {
 		if(pSwitch != lastSwitch) {
 			if(pSwitch) {
-				mode++;
-				if(mode > 4) mode = 0;
+				mode = (mode + 1) % 5;
 			}
 
 			lastSwitch = pSwitch;
