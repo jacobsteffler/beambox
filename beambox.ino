@@ -16,7 +16,7 @@
 #define PICK 2
 #define FADE 3
 
-#define SENSOR_DELAY 20
+#define SENSOR_DELAY 5
 
 enum direction {
 	still,
@@ -95,31 +95,14 @@ void loop() {
 			lastSwitch = pSwitch;
 		}
 
-		if(pinA != lastA) {
-			if(pinA) {
-				if(pinB) dir = cw; //TODO Set all directions
-				else dir = ccw;
-			} else {
-				if(!pinB) dir = cw;
-				else dir = ccw;
-			}
-
-			lastA = pinA;
-			lastB = pinB;
-		} else if(pinB != lastB) {
-			if(pinB) {
-				if(!pinA) dir = cw;
-				else dir = ccw;
-			} else {
-				if(pinA) dir = cw;
-				else dir = ccw;
-			}
-
-			lastA = pinA;
-			lastB = pinB;
+		if(lastA && lastB) {
+			if(!pinA && pinB) dir = cw;
+			else if(pinA && !pinB) dir = ccw;
 		}
 
 		lastTime = millis();
+		lastA = pinA;
+		lastB = pinB;
 	}
 
 	if(dir != still) {
@@ -130,11 +113,13 @@ void loop() {
 
 				break;
 			case FADE: //Color fade
-				if(dir == cw) scheme++;
-				else scheme--;
-
-				if(scheme >= NUM_SCHEMES) scheme = 0;
-				if(scheme < 0) scheme = NUM_SCHEMES - 1;
+				if(dir == cw) {
+					if(scheme == NUM_SCHEMES - 1) scheme = 0;
+					else scheme++;
+				} else {
+					if(scheme == 0) scheme = NUM_SCHEMES - 1;
+					else scheme--;
+				}
 
 				sub = 0;
 				frac = 0;
