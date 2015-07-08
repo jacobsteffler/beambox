@@ -16,7 +16,7 @@
 #define PICK 2
 #define FADE 3
 
-#define SENSOR_DELAY 5 //TODO Still ok?
+#define SENSOR_DELAY 20
 
 enum direction {
 	still,
@@ -44,14 +44,14 @@ byte frac;
 CRGB currentFade;
 const unsigned long fadeDelay = 100;
 unsigned long lastTimeFade;
-const CRGB schemes[NUM_SCHEMES][PER_SCHEME] = { //TODO Finish colors; brighter?
-	{CRGB(204, 12, 57), CRGB(230, 120, 30), CRGB(200, 207, 2), CRGB(248, 252, 193), CRGB(22, 147, 167)},
-	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
-	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
-	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
-	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
-	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)},
-	{CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0), CRGB(0,0,0)}
+const CRGB schemes[NUM_SCHEMES][PER_SCHEME] = {
+	{CRGB::Red, CRGB::Orange, CRGB::Yellow, CRGB::DeepPink, CRGB::DarkViolet},
+	{CRGB::Chartreuse, CRGB::Cyan, CRGB::DarkGreen, CRGB::MediumSpringGreen, CRGB::DodgerBlue},
+	{CRGB::GreenYellow, CRGB::Gold, CRGB::Green, CRGB::Orange, CRGB::Red},
+	{CRGB::Purple, CRGB::Red, CRGB::Teal, CRGB::Navy, CRGB::MediumVioletRed},
+	{CRGB::Olive, CRGB::OliveDrab, CRGB::Orange, CRGB::OrangeRed, CRGB::Orchid},
+	{CRGB::GreenYellow, CRGB::Yellow, CRGB::YellowGreen, CRGB::Chartreuse, CRGB::Gold},
+	{CRGB::DarkOrange, CRGB::DarkOrchid, CRGB::Cyan, CRGB::Crimson, CRGB::Lime}
 };
 
 void setup() {
@@ -65,7 +65,7 @@ void setup() {
 	lastB = pinB = (HIGH == digitalRead(E_PIN_B));
 	lastSwitch = pSwitch = (HIGH == digitalRead(SWITCH_PIN));
 
-	mode = 0;
+	mode = OFF;
 	dir = still;
 	hue = 0;
 	scheme = 0;
@@ -85,7 +85,11 @@ void loop() {
 			if(pSwitch) {
 				mode = (mode + 1) % NUM_MODES;
 
-				if(mode == FADE) lastTimeFade = millis();
+				if(mode == FADE) {
+					lastTimeFade = millis();
+					sub = frac = 0;
+					currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % PER_SCHEME], frac);
+				}
 			}
 
 			lastSwitch = pSwitch;
@@ -129,8 +133,8 @@ void loop() {
 				if(dir == cw) scheme++;
 				else scheme--;
 
-				if(scheme > NUM_SCHEMES) scheme = NUM_SCHEMES;
-				if(scheme < 0) scheme = 0;
+				if(scheme >= NUM_SCHEMES) scheme = 0;
+				if(scheme < 0) scheme = NUM_SCHEMES - 1;
 
 				sub = 0;
 				frac = 0;
@@ -138,8 +142,6 @@ void loop() {
 				lastTimeFade = millis();
 				currentFade = blend(schemes[scheme][sub], schemes[scheme][(sub + 1) % PER_SCHEME], frac);
 
-				break;
-			case 4: //Rainbow chase //TODO
 				break;
 		}
 
